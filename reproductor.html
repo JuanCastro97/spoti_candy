@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #2d2d2d;
+            color: white;
+            text-align: center;
+            padding: 50px 0;
+        }
+    
+        #track-info {
+            margin: 20px 0;
+        }
+    
+        #track-image {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    
+        button {
+            background-color: #1DB954; /* Color de Spotify */
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+    
+        button:hover {
+            background-color: #17a441; /* Un verde un poco más oscuro */
+        }
+    
+        label {
+            margin-right: 10px;
+        }
+    
+        input[type="range"] {
+            width: 200px;
+        }
+
+
+        /* Estilos de animación */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #track-info img, #track-name, #track-artist {
+            animation: fadeIn 2s ease;
+        }
+
+        @keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+#track-info img, #track-name, #track-artist {
+    animation: slideIn 1s ease-out;
+}
+
+
+@keyframes fadeInSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+#track-info img, #track-name, #track-artist {
+    animation: fadeInSlideIn 1s ease-out;
+}
+
+
+
+    </style>
+    
+</head>
+<body>
+    <!-- Página web después de que el usuario ha otorgado permiso -->
+
+
+<script>
+    
+
+
+    // Debes obtener y configurar estos valores
+    let accessToken = 'TU_ACCESS_TOKEN'; // Este es el token que se obtiene inicialmente
+    let refreshToken = 'TU_TOKEN_DE_REFRESCO'; // Debes obtener este valor luego de la autenticación inicial
+
+
+    let player;
+
+    
+    window.onSpotifyWebPlaybackSDKReady = () => {
+        const token = accessToken; 
+        player = new Spotify.Player({
+            name: 'Mi Reproductor Spotify',
+            getOAuthToken: cb => { cb(token); }
+        });
+
+        // Error handling
+        player.addListener('initialization_error', ({ message }) => { console.error(message); });
+        player.addListener('authentication_error', ({ message }) => { console.error(message); });
+        player.addListener('account_error', ({ message }) => { console.error(message); });
+        player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+        // Playback status updates
+        player.addListener('player_state_changed', state => {
+    console.log(state);
+
+    // Si hay una canción reproduciéndose, actualizamos la imagen, nombre y artista
+    if (state.track_window.current_track) {
+        const track = state.track_window.current_track;
+        const imageUrl = track.album.images[0].url;
+        document.getElementById('track-image').src = imageUrl;
+        document.getElementById('track-name').textContent = track.name;
+        document.getElementById('track-artist').textContent = track.artists[0].name;
+    }
+});
+
+
+
+// ... resto del código del reproductor ...
+
+function updatePlayerToken() {
+    fetch('http://localhost:3000/current_token')
+    .then(response => response.json())
+    .then(data => {
+        if (data.access_token) {
+            accessToken = data.access_token;
+            if (player) {
+                player._options.getOAuthToken = cb => { cb(accessToken); };
+            }
+        }
+    })
+    .catch(error => console.error('Error fetching current access token:', error));
+}
+
+// Actualiza el token cada 30 minutos
+setInterval(updatePlayerToken, 45 * 60 * 1000);
+updatePlayerToken();
+
+
+
+
+        // Ready
+        player.addListener('ready', ({ device_id }) => {
+            console.log('Listo para usar con el ID del dispositivo:', device_id);
+        });
+
+        // Not Ready
+        player.addListener('not_ready', ({ device_id }) => {
+            console.log('El dispositivo ha sido desconectado:', device_id);
+        });
+
+        // Conectar el reproductor
+        player.connect();
+    };
+
+
+  
+
+
+</script>
+
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+<!-- Botones de control de reproducción -->
+<div id="track-info">
+    <img id="track-image" src="" alt="Imagen de la canción" width="200">
+    <h2 id="track-name">Nombre de la canción</h2>
+    <p id="track-artist">Nombre del artista</p>
+</div>
+
+<div id="controls">
+    <button onclick="player.togglePlay()">Reproducir/Pausar</button>
+    <button onclick="player.nextTrack()">Siguiente</button>
+    <button onclick="player.previousTrack()">Anterior</button>
+</div>
+
+
+
+</body>
+</html>
