@@ -97,91 +97,99 @@
     <!-- Página web después de que el usuario ha otorgado permiso -->
 
 
+<!-- El inicio del HTML se mantiene igual hasta donde comienza el script -->
+
 <script>
-    
-
-
-    // Debes obtener y configurar estos valores
-    let accessToken = 'TU_ACCESS_TOKEN'; // Este es el token que se obtiene inicialmente
-    let refreshToken = 'TU_TOKEN_DE_REFRESCO'; // Debes obtener este valor luego de la autenticación inicial
-
-
+    let accessToken = ''; 
+    let refreshToken = ''; 
     let player;
 
-    
-    window.onSpotifyWebPlaybackSDKReady = () => {
-        const token = accessToken; 
-        player = new Spotify.Player({
-            name: 'Mi Reproductor Spotify',
-            getOAuthToken: cb => { cb(token); }
-        });
-
-        // Error handling
-        player.addListener('initialization_error', ({ message }) => { console.error(message); });
-        player.addListener('authentication_error', ({ message }) => { console.error(message); });
-        player.addListener('account_error', ({ message }) => { console.error(message); });
-        player.addListener('playback_error', ({ message }) => { console.error(message); });
-
-        // Playback status updates
-        player.addListener('player_state_changed', state => {
-    console.log(state);
-
-    // Si hay una canción reproduciéndose, actualizamos la imagen, nombre y artista
-    if (state.track_window.current_track) {
-        const track = state.track_window.current_track;
-        const imageUrl = track.album.images[0].url;
-        document.getElementById('track-image').src = imageUrl;
-        document.getElementById('track-name').textContent = track.name;
-        document.getElementById('track-artist').textContent = track.artists[0].name;
-    }
-});
-
-
-
-// ... resto del código del reproductor ...
-
-function updatePlayerToken() {
-    fetch('http://localhost:3000/current_token')
-    .then(response => response.json())
-    .then(data => {
-        if (data.access_token) {
-            accessToken = data.access_token;
-            if (player) {
-                player._options.getOAuthToken = cb => { cb(accessToken); };
+    async function fetchCurrentToken() {
+        try {
+            const response = await fetch('https://morning-cat-texture.glitch.me/current_token');
+            const data = await response.json();
+            if (data.access_token) {
+                accessToken = data.access_token;
+                return accessToken;
             }
+        } catch (error) {
+            console.error('Error fetching token:', error);
         }
-    })
-    .catch(error => console.error('Error fetching current access token:', error));
-}
+        return null;
+    }
 
-// Actualiza el token cada 30 minutos
-setInterval(updatePlayerToken, 45 * 60 * 1000);
-updatePlayerToken();
+    function updatePlayerToken() {
+        fetchCurrentToken()
+            .then(token => {
+                if (token && player) {
+                    player._options.getOAuthToken = cb => { cb(accessToken); };
+                }
+            })
+            .catch(error => console.error('Error fetching current access token:', error));
+    }
 
+    window.onSpotifyWebPlaybackSDKReady = () => {
+        fetchCurrentToken().then(token => {
+            if (token) {
+                player = new Spotify.Player({
+                    name: 'Mi Reproductor Spotify',
+                    getOAuthToken: cb => { cb(token); }
+                });
 
+                // Error handling
+                player.addListener('initialization_error', ({ message }) => { console.error(message); });
+                player.addListener('authentication_error', ({ message }) => { console.error(message); });
+                player.addListener('account_error', ({ message }) => { console.error(message); });
+                player.addListener('playback_error', ({ message }) => { console.error(message); });
 
+                player.addListener('player_state_changed', state => {
+                    console.log(state);
+                    if (state.track_window.current_track) {
+                        const track = state.track_window.current_track;
+                        const imageUrl = track.album.images[0].url;
+                        document.getElementById('track-image').src = imageUrl;
+                        document.getElementById('track-name').textContent = track.name;
+                        document.getElementById('track-artist').textContent = track.artists[0].name;
+                    }
+                });
 
-        // Ready
-        player.addListener('ready', ({ device_id }) => {
-            console.log('Listo para usar con el ID del dispositivo:', device_id);
+                player.addListener('ready', ({ device_id }) => {
+                    console.log('Listo para usar con el ID del dispositivo:', device_id);
+                });
+
+                player.addListener('not_ready', ({ device_id }) => {
+                    console.log('El dispositivo ha sido desconectado:', device_id);
+                });
+
+                // Conectar el reproductor
+                player.connect();
+            }
         });
-
-        // Not Ready
-        player.addListener('not_ready', ({ device_id }) => {
-            console.log('El dispositivo ha sido desconectado:', device_id);
-        });
-
-        // Conectar el reproductor
-        player.connect();
     };
 
 
-  
+    const socket = io.connect('https://morning-cat-texture.glitch.me/');
+
+socket.on('playSong', (songId) => {
+    // Utiliza el SDK de Spotify para reproducir la canción
+    // player.play() u otra función relacionada del SDK de Spotify
+    playSongWithSpotifySDK(songId);
+});
 
 
+    // Actualiza el token cada 45 minutos
+    setInterval(updatePlayerToken, 45 * 60 * 1000);
+
+    // Obtiene el token al cargar la página
+    updatePlayerToken();
 </script>
 
+<!-- El resto de HTML se mantiene igual -->
+
+
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
 
 <!-- Botones de control de reproducción -->
 <div id="track-info">
