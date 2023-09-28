@@ -183,11 +183,26 @@ socket.on('playSong', (songId) => {
 });
 
 
+function playSongWithSpotifySDK(songId) {
+    if (player && songId) {
+        player.play({ uris: [`spotify:track:${songId}`] });
+    }
+}
+
+
+function requestPlaySong(songId) {
+    socket.emit('requestPlaySong', songId);
+}
+
+
     // Actualiza el token cada 45 minutos
     setInterval(updatePlayerToken, 45 * 60 * 1000);
 
     // Obtiene el token al cargar la página
     updatePlayerToken();
+
+
+
 </script>
 
 
@@ -203,6 +218,8 @@ socket.on('playSong', (songId) => {
     <button onclick="player.togglePlay()">Reproducir/Pausar</button>
     <button onclick="player.nextTrack()">Siguiente</button>
     <button onclick="player.previousTrack()">Anterior</button>
+    <button onclick="requestPlaySong('ID_DE_LA_CANCION')">Reproducir en todos los dispositivos</button>
+
 </div>
 
 
