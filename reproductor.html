@@ -98,7 +98,7 @@
 
 
 <!-- El inicio del HTML se mantiene igual hasta donde comienza el script -->
-<script src="https://sdk.scdn.co/spotify-player.js"></script>
+
 <script src="https://morning-cat-texture.glitch.me/socket.io/socket.io.js"></script>
 <script>
     let accessToken = ''; 
@@ -184,10 +184,20 @@ socket.on('playSong', (songId) => {
 
 
 function playSongWithSpotifySDK(songId) {
-    if (player && songId) {
-        player.play({ uris: [`spotify:track:${songId}`] });
-    }
+    fetch('https://morning-cat-texture.glitch.me/play', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uri: `spotify:track:${songId}` })
+    })
+    .then(response => response.text())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
 }
+
+// ... (modificar otras funciones de control como pausar, siguiente, anterior de manera similar)
+
 
 
 function requestPlaySong(songId) {
