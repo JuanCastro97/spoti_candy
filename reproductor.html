@@ -130,6 +130,7 @@
 
     window.onSpotifyWebPlaybackSDKReady = () => {
         fetchCurrentToken().then(token => {
+            console.log("Spotify SDK listo para usar");
             if (token) {
                 player = new Spotify.Player({
                     name: 'Mi Reproductor Spotify',
